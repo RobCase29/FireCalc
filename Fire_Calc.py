@@ -29,18 +29,18 @@ def parse_currency(value):
 def format_currency(value):
     return f"${value:,.0f}"
 
-def calculate_retirement(initial_capital, withdrawal_rate, annual_expenses, years, return_rate, inflation_rate, tax_rate, taxable_percentage):
+def calculate_retirement(initial_capital, annual_expenses, years, return_rate, inflation_rate, tax_rate, taxable_percentage):
     capital = [initial_capital]
     expenses = [annual_expenses]
-    withdrawals = [max(annual_expenses, initial_capital * (withdrawal_rate / 100))]
+    withdrawals = [annual_expenses]
+    withdrawal_rates = [annual_expenses / initial_capital * 100]
+    
     for year in range(1, years + 1):
         current_expenses = expenses[-1] * (1 + inflation_rate/100)
         expenses.append(current_expenses)
         
-        current_withdrawal = withdrawals[-1] * (1 + inflation_rate/100)
-        withdrawals.append(current_withdrawal)
-        
-        withdrawal = max(current_expenses, current_withdrawal)
+        withdrawal = current_expenses
+        withdrawals.append(withdrawal)
         
         growth = capital[-1] * (return_rate / 100)
         tax = growth * (taxable_percentage / 100) * (tax_rate / 100)
@@ -48,9 +48,13 @@ def calculate_retirement(initial_capital, withdrawal_rate, annual_expenses, year
         new_capital = capital[-1] + growth - tax - withdrawal
         capital.append(max(0, new_capital))
         
+        withdrawal_rate = (withdrawal / capital[-2]) * 100 if capital[-2] > 0 else float('inf')
+        withdrawal_rates.append(withdrawal_rate)
+        
         if new_capital <= 0:
             break
-    return capital, expenses, withdrawals
+    
+    return capital, expenses, withdrawals, withdrawal_rates
 
 def find_sustainable_value(target_years, annual_expenses, return_rate, inflation_rate, tax_rate, taxable_percentage, find_capital=True, initial_value=1000000, withdrawal_rate=4):
     low, high = 0, initial_value * 10 if find_capital else 20
@@ -77,7 +81,6 @@ st.markdown("""
 st.markdown("""
     **Summary:** This web app allows you to input your financial details and calculates how long your retirement savings will last. It also provides insights into sustainable withdrawal rates and required capital for perpetuity.
 """)
-
 
 if 'show_results' not in st.session_state:
     st.session_state.show_results = False
@@ -107,7 +110,6 @@ with col1:
         st.error("Please enter a valid dollar amount for Annual Expenses")
         annual_expenses = 75000
 
-    withdrawal_rate = st.slider('Annual Withdrawal Rate (%)', 0.0, 10.0, 4.0, 0.1, help="The percentage of your initial capital you plan to withdraw annually. Typically around 4%.")
     return_rate = st.slider('Expected Annual Return (%)', 0.0, 15.0, 10.0, 0.1, help="The expected annual return on your investments. Adjust based on your investment strategy.")
     inflation_rate = st.slider('Expected Annual Inflation (%)', 0.0, 10.0, 3.8, 0.1, help="The expected annual inflation rate. Typically around 3-4%.")
     tax_rate = st.slider('Tax Rate (%)', 0.0, 50.0, 15.0, 0.1, help="The tax rate applied to your investment returns. Adjust based on your tax bracket.")
@@ -118,9 +120,8 @@ with col1:
 
 with col2:
     if st.session_state.show_results:
-        # Calculation
         years = 50
-        capital_over_time, expenses_over_time, withdrawals_over_time = calculate_retirement(initial_capital, withdrawal_rate, annual_expenses, years, return_rate, inflation_rate, tax_rate, taxable_percentage)
+        capital_over_time, expenses_over_time, withdrawals_over_time, withdrawal_rates = calculate_retirement(initial_capital, annual_expenses, years, return_rate, inflation_rate, tax_rate, taxable_percentage)
 
         # Results section
         st.header("Results")
@@ -131,30 +132,32 @@ with col2:
         fig.add_trace(go.Scatter(x=list(range(len(capital_over_time))), y=capital_over_time, mode='lines', name='Capital'))
         fig.add_trace(go.Scatter(x=list(range(len(expenses_over_time))), y=expenses_over_time, mode='lines', name='Annual Expenses'))
         fig.add_trace(go.Scatter(x=list(range(len(withdrawals_over_time))), y=withdrawals_over_time, mode='lines', name='Annual Withdrawal'))
+        fig.add_trace(go.Scatter(x=list(range(len(withdrawal_rates))), y=withdrawal_rates, mode='lines', name='Withdrawal Rate (%)'))
         fig.update_layout(
-            title='Projected Capital, Expenses, and Withdrawals Over Time',
+            title='Projected Capital, Expenses, Withdrawals, and Withdrawal Rates Over Time',
             xaxis_title='Years',
-            yaxis_title='Amount ($)',
-            height=400,
+            yaxis_title='Amount ($) / Rate (%)',
+            height=500,
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
             font=dict(color='black' if current_theme == 'light' else 'white'),
-            legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),  # Move legend below the plot
-            margin=dict(l=50, r=20, t=80, b=100),  # Adjust bottom margin for legend
+            legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),
+            margin=dict(l=50, r=20, t=80, b=100),
             autosize=True
         )
         fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey' if current_theme == 'light' else 'grey')
         fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey' if current_theme == 'light' else 'grey')
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'scrollZoom': False, 'staticPlot': True})  # Disable zoom and make plot static
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'scrollZoom': False, 'staticPlot': True})
 
         # Table
         st.subheader("Detailed Results")
         intervals = [0, 10, 20, 30, 40, 50]
         data = {
             'Years': intervals,
-            'Remaining Capital': [f'${capital_over_time[year]:,.0f}' if year < len(capital_over_time) else 'N/A' for year in intervals],
-            'Annual Expenses': [f'${expenses_over_time[year]:,.0f}' if year < len(expenses_over_time) else 'N/A' for year in intervals],
-            'Annual Withdrawal': [f'${withdrawals_over_time[year]:,.0f}' if year < len(withdrawals_over_time) else 'N/A' for year in intervals]
+            'Remaining Capital': [f'${capital_over_time[min(year, len(capital_over_time)-1)]:,.0f}' for year in intervals],
+            'Annual Expenses': [f'${expenses_over_time[min(year, len(expenses_over_time)-1)]:,.0f}' for year in intervals],
+            'Annual Withdrawal': [f'${withdrawals_over_time[min(year, len(withdrawals_over_time)-1)]:,.0f}' for year in intervals],
+            'Withdrawal Rate (%)': [f'{withdrawal_rates[min(year, len(withdrawal_rates)-1)]:.2f}%' for year in intervals]
         }
         df = pd.DataFrame(data)
         st.dataframe(df, use_container_width=True, height=300)
@@ -166,11 +169,11 @@ with col2:
             st.warning(f'⚠️ Warning: Capital depleted after {years_until_depletion} years.')
             
             # Calculate required initial capital for 50 years
-            required_capital_50y = find_sustainable_value(50, annual_expenses, return_rate, inflation_rate, tax_rate, taxable_percentage, True, initial_capital, withdrawal_rate)
+            required_capital_50y = find_sustainable_value(50, annual_expenses, return_rate, inflation_rate, tax_rate, taxable_percentage, True, initial_capital, withdrawal_rates[0])
             st.info(f'💡 Required initial capital for 50 years: ${required_capital_50y:,.2f}')
             
             # Calculate maximum sustainable withdrawal rate for 50 years
-            max_withdrawal_rate_50y = find_sustainable_value(50, annual_expenses, return_rate, inflation_rate, tax_rate, taxable_percentage, False, initial_capital, withdrawal_rate)
+            max_withdrawal_rate_50y = find_sustainable_value(50, annual_expenses, return_rate, inflation_rate, tax_rate, taxable_percentage, False, initial_capital, withdrawal_rates[0])
             st.info(f'💡 Maximum sustainable withdrawal rate for 50 years: {max_withdrawal_rate_50y:.2f}%')
             
             # Calculate maximum sustainable annual expenses for 50 years
@@ -204,7 +207,7 @@ with col2:
             **Note:** This calculator provides estimates based on the inputs provided. Actual results may vary based on market conditions and other factors.
         """)
 
-        # Custom CSS for responsiveness and highlighting the sidebar toggle button
+        # Custom CSS for responsiveness
         st.markdown("""
         <style>
         @media (max-width: 768px) {
@@ -213,17 +216,6 @@ with col2:
             }
             .stPlotlyChart {
                 height: 60vh !important;
-            }
-            .cta {
-                background-color: #f0f0f0;
-                padding: 10px;
-                border-radius: 5px;
-                text-align: center;
-                margin-bottom: 20px;
-            }
-            .css-1lcbmhc {
-                border: 2px solid #ff4b4b !important;
-                border-radius: 5px;
             }
             .sidebar-content {
                 overflow-y: auto;
