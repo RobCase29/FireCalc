@@ -77,23 +77,23 @@ st.markdown("""
 st.sidebar.header("Input Parameters")
 initial_capital_input = st.sidebar.text_input(
     'Initial Capital',
-    value="$1,000,000",
+    value="$500,000",
     help="Enter the initial capital amount. You can use dollar signs and commas."
 )
 initial_capital = parse_currency(initial_capital_input)
 if initial_capital is None:
     st.sidebar.error("Please enter a valid dollar amount for Initial Capital")
-    initial_capital = 1000000
+    initial_capital = 500000
 
 annual_expenses_input = st.sidebar.text_input(
     'Annual Expenses',
-    value="$40,000",
+    value="$75,000",
     help="Enter your annual expenses. You can use dollar signs and commas."
 )
 annual_expenses = parse_currency(annual_expenses_input)
 if annual_expenses is None:
     st.sidebar.error("Please enter a valid dollar amount for Annual Expenses")
-    annual_expenses = 40000
+    annual_expenses = 75000
 
 withdrawal_rate = st.sidebar.slider('Annual Withdrawal Rate (%)', 0.0, 10.0, 4.0, 0.1, help="The percentage of your initial capital you plan to withdraw annually.")
 return_rate = st.sidebar.slider('Expected Annual Return (%)', 0.0, 15.0, 10.0, 0.1, help="The expected annual return on your investments.")
@@ -122,8 +122,8 @@ fig.update_layout(
     plot_bgcolor='rgba(0,0,0,0)',
     paper_bgcolor='rgba(0,0,0,0)',
     font=dict(color='black' if current_theme == 'light' else 'white'),
-    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-    margin=dict(l=50, r=20, t=80, b=50),
+    legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),  # Move legend below the plot
+    margin=dict(l=50, r=20, t=80, b=100),  # Adjust bottom margin for legend
     autosize=True
 )
 fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey' if current_theme == 'light' else 'grey')
@@ -135,7 +135,7 @@ st.subheader("Detailed Results")
 intervals = [0, 10, 20, 30, 40, 50]
 data = {
     'Years': intervals,
-    'Remaining Capital': [f'${capital_over_time[year]:,.0f}' if year < len(capital_over_time) else 'N/A' for year in intervals],
+    'Remaining Capital': [f'${capital_over_time[year]:,.0ßf}' if year < len(capital_over_time) else 'N/A' for year in intervals],
     'Annual Expenses': [f'${expenses_over_time[year]:,.0f}' if year < len(expenses_over_time) else 'N/A' for year in intervals],
     'Annual Withdrawal': [f'${withdrawals_over_time[year]:,.0f}' if year < len(withdrawals_over_time) else 'N/A' for year in intervals]
 }
