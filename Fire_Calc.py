@@ -85,169 +85,164 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Input section
-st.sidebar.header("Input Parameters")
-initial_capital_input = st.sidebar.text_input(
-    'Initial Capital',
-    value="$500,000",
-    help="Enter the initial capital amount. You can use dollar signs and commas. Adjust based on how much you have in investments."
-)
-initial_capital = parse_currency(initial_capital_input)
-if initial_capital is None:
-    st.sidebar.error("Please enter a valid dollar amount for Initial Capital")
-    initial_capital = 500000
+if 'show_results' not in st.session_state:
+    st.session_state.show_results = False
 
-annual_expenses_input = st.sidebar.text_input(
-    'Annual Expenses',
-    value="$75,000",
-    help="Enter your annual expenses. You can use dollar signs and commas. Adjust based on your expected annual spending."
-)
-annual_expenses = parse_currency(annual_expenses_input)
-if annual_expenses is None:
-    st.sidebar.error("Please enter a valid dollar amount for Annual Expenses")
-    annual_expenses = 75000
+col1, col2 = st.columns([1, 3])
 
-withdrawal_rate = st.sidebar.slider('Annual Withdrawal Rate (%)', 0.0, 10.0, 4.0, 0.1, help="The percentage of your initial capital you plan to withdraw annually. Typically around 4%.")
-return_rate = st.sidebar.slider('Expected Annual Return (%)', 0.0, 15.0, 10.0, 0.1, help="The expected annual return on your investments. Adjust based on your investment strategy.")
-inflation_rate = st.sidebar.slider('Expected Annual Inflation (%)', 0.0, 10.0, 3.8, 0.1, help="The expected annual inflation rate. Typically around 3-4%.")
-tax_rate = st.sidebar.slider('Tax Rate (%)', 0.0, 50.0, 15.0, 0.1, help="The tax rate applied to your investment returns. Adjust based on your tax bracket.")
-taxable_percentage = st.sidebar.slider('Percentage of Capital Subject to Tax (%)', 0.0, 100.0, 50.0, 0.1, help="The percentage of your capital that is subject to tax. Adjust based on your investment portfolio.")
-
-if 'sidebar_state' not in st.session_state:
-    st.session_state.sidebar_state = 'expanded'
-
-def close_sidebar():
-    st.session_state.sidebar_state = 'collapsed'
-
-if st.sidebar.button('Done', key='done_button', on_click=close_sidebar):
-    pass
-
-# Calculation
-years = 50
-capital_over_time, expenses_over_time, withdrawals_over_time = calculate_retirement(initial_capital, withdrawal_rate, annual_expenses, years, return_rate, inflation_rate, tax_rate, taxable_percentage)
-
-# Results section
-st.header("Results")
-
-# Plot
-current_theme = get_current_theme()
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=list(range(len(capital_over_time))), y=capital_over_time, mode='lines', name='Capital'))
-fig.add_trace(go.Scatter(x=list(range(len(expenses_over_time))), y=expenses_over_time, mode='lines', name='Annual Expenses'))
-fig.add_trace(go.Scatter(x=list(range(len(withdrawals_over_time))), y=withdrawals_over_time, mode='lines', name='Annual Withdrawal'))
-fig.update_layout(
-    title='Projected Capital, Expenses, and Withdrawals Over Time',
-    xaxis_title='Years',
-    yaxis_title='Amount ($)',
-    height=400,
-    plot_bgcolor='rgba(0,0,0,0)',
-    paper_bgcolor='rgba(0,0,0,0)',
-    font=dict(color='black' if current_theme == 'light' else 'white'),
-    legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),  # Move legend below the plot
-    margin=dict(l=50, r=20, t=80, b=100),  # Adjust bottom margin for legend
-    autosize=True
-)
-fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey' if current_theme == 'light' else 'grey')
-fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey' if current_theme == 'light' else 'grey')
-st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'scrollZoom': False, 'staticPlot': True})  # Disable zoom and make plot static
-
-# Table
-st.subheader("Detailed Results")
-intervals = [0, 10, 20, 30, 40, 50]
-data = {
-    'Years': intervals,
-    'Remaining Capital': [f'${capital_over_time[year]:,.0f}' if year < len(capital_over_time) else 'N/A' for year in intervals],
-    'Annual Expenses': [f'${expenses_over_time[year]:,.0f}' if year < len(expenses_over_time) else 'N/A' for year in intervals],
-    'Annual Withdrawal': [f'${withdrawals_over_time[year]:,.0f}' if year < len(withdrawals_over_time) else 'N/A' for year in intervals]
-}
-df = pd.DataFrame(data)
-st.dataframe(df, use_container_width=True, height=300)
-
-# Analysis
-st.subheader("Analysis")
-years_until_depletion = len(capital_over_time) - 1
-if years_until_depletion < years:
-    st.warning(f'⚠️ Warning: Capital depleted after {years_until_depletion} years.')
+with col1:
+    st.header("Input Parameters")
     
-    # Calculate required initial capital for 50 years
-    required_capital_50y = find_sustainable_value(50, annual_expenses, return_rate, inflation_rate, tax_rate, taxable_percentage, True, initial_capital, withdrawal_rate)
-    st.info(f'💡 Required initial capital for 50 years: ${required_capital_50y:,.2f}')
-    
-    # Calculate maximum sustainable withdrawal rate for 50 years
-    max_withdrawal_rate_50y = find_sustainable_value(50, annual_expenses, return_rate, inflation_rate, tax_rate, taxable_percentage, False, initial_capital, withdrawal_rate)
-    st.info(f'💡 Maximum sustainable withdrawal rate for 50 years: {max_withdrawal_rate_50y:.2f}%')
-    
-    # Calculate maximum sustainable annual expenses for 50 years
-    max_expenses_50y = max_withdrawal_rate_50y * initial_capital / 100
-    st.info(f'💡 Maximum sustainable initial annual expenses for 50 years: ${max_expenses_50y:,.2f}')
-else:
-    st.success(f'✅ Capital lasts for the entire {years} year period.')
-    
-    # Calculate remaining capital after 50 years
-    final_capital = capital_over_time[-1]
-    st.info(f'💡 Remaining capital after 50 years: ${final_capital:,.2f}')
-    
-    # Calculate total withdrawals over 50 years
-    total_withdrawals = sum(expenses_over_time)
-    st.info(f'💡 Total withdrawals over 50 years: ${total_withdrawals:,.2f}')
+    initial_capital_input = st.text_input(
+        'Initial Capital',
+        value="$500,000",
+        help="Enter the initial capital amount. You can use dollar signs and commas. Adjust based on how much you have in investments."
+    )
+    initial_capital = parse_currency(initial_capital_input)
+    if initial_capital is None:
+        st.error("Please enter a valid dollar amount for Initial Capital")
+        initial_capital = 500000
 
-# Perpetuity calculations
-st.subheader('Perpetuity Calculations')
-real_return_rate = return_rate - inflation_rate
-after_tax_real_return_rate = real_return_rate * (1 - (tax_rate / 100) * (taxable_percentage / 100))
-sustainable_withdrawal = initial_capital * (after_tax_real_return_rate / 100)
-st.info(f"💡 Sustainable annual withdrawal in perpetuity: ${sustainable_withdrawal:,.2f}")
-perpetuity_withdrawal_rate = (sustainable_withdrawal / initial_capital) * 100
-st.info(f"💡 Sustainable withdrawal rate in perpetuity: {perpetuity_withdrawal_rate:.2f}%")
-required_capital_perpetuity = annual_expenses / (after_tax_real_return_rate / 100)
-st.info(f"💡 Required initial capital for perpetuity (based on current annual expenses): ${required_capital_perpetuity:,.2f}")
+    annual_expenses_input = st.text_input(
+        'Annual Expenses',
+        value="$75,000",
+        help="Enter your annual expenses. You can use dollar signs and commas. Adjust based on your expected annual spending."
+    )
+    annual_expenses = parse_currency(annual_expenses_input)
+    if annual_expenses is None:
+        st.error("Please enter a valid dollar amount for Annual Expenses")
+        annual_expenses = 75000
 
-# Footer
-st.markdown("""
-    ---
-    **Note:** This calculator provides estimates based on the inputs provided. Actual results may vary based on market conditions and other factors.
-""")
+    withdrawal_rate = st.slider('Annual Withdrawal Rate (%)', 0.0, 10.0, 4.0, 0.1, help="The percentage of your initial capital you plan to withdraw annually. Typically around 4%.")
+    return_rate = st.slider('Expected Annual Return (%)', 0.0, 15.0, 10.0, 0.1, help="The expected annual return on your investments. Adjust based on your investment strategy.")
+    inflation_rate = st.slider('Expected Annual Inflation (%)', 0.0, 10.0, 3.8, 0.1, help="The expected annual inflation rate. Typically around 3-4%.")
+    tax_rate = st.slider('Tax Rate (%)', 0.0, 50.0, 15.0, 0.1, help="The tax rate applied to your investment returns. Adjust based on your tax bracket.")
+    taxable_percentage = st.slider('Percentage of Capital Subject to Tax (%)', 0.0, 100.0, 50.0, 0.1, help="The percentage of your capital that is subject to tax. Adjust based on your investment portfolio.")
 
-# Custom CSS for responsiveness and highlighting the sidebar toggle button
-st.markdown("""
-<style>
-@media (max-width: 768px) {
-    .stApp {
-        padding-top: 1rem;
-    }
-    .stPlotlyChart {
-        height: 60vh !important;
-    }
-    .cta {
-        background-color: #f0f0f0;
-        padding: 10px;
-        border-radius: 5px;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-    .css-1lcbmhc {
-        border: 2px solid #ff4b4b !important;
-        border-radius: 5px;
-    }
-    .sidebar-content {
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-}
-@media (max-width: 480px) {
-    .stPlotlyChart {
-        height: 70vh !important;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
+    if st.button('Calculate'):
+        st.session_state.show_results = True
 
-# JavaScript to collapse the sidebar when 'Done' is clicked
-if st.session_state.sidebar_state == 'collapsed':
-    html("""
-        <script>
-        var sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
-        sidebar.style.width = 0;
-        sidebar.style.transition = 'width 0.5s';
-        </script>
-    """)
+with col2:
+    if st.session_state.show_results:
+        # Calculation
+        years = 50
+        capital_over_time, expenses_over_time, withdrawals_over_time = calculate_retirement(initial_capital, withdrawal_rate, annual_expenses, years, return_rate, inflation_rate, tax_rate, taxable_percentage)
+
+        # Results section
+        st.header("Results")
+
+        # Plot
+        current_theme = get_current_theme()
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=list(range(len(capital_over_time))), y=capital_over_time, mode='lines', name='Capital'))
+        fig.add_trace(go.Scatter(x=list(range(len(expenses_over_time))), y=expenses_over_time, mode='lines', name='Annual Expenses'))
+        fig.add_trace(go.Scatter(x=list(range(len(withdrawals_over_time))), y=withdrawals_over_time, mode='lines', name='Annual Withdrawal'))
+        fig.update_layout(
+            title='Projected Capital, Expenses, and Withdrawals Over Time',
+            xaxis_title='Years',
+            yaxis_title='Amount ($)',
+            height=400,
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font=dict(color='black' if current_theme == 'light' else 'white'),
+            legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),  # Move legend below the plot
+            margin=dict(l=50, r=20, t=80, b=100),  # Adjust bottom margin for legend
+            autosize=True
+        )
+        fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey' if current_theme == 'light' else 'grey')
+        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey' if current_theme == 'light' else 'grey')
+        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'scrollZoom': False, 'staticPlot': True})  # Disable zoom and make plot static
+
+        # Table
+        st.subheader("Detailed Results")
+        intervals = [0, 10, 20, 30, 40, 50]
+        data = {
+            'Years': intervals,
+            'Remaining Capital': [f'${capital_over_time[year]:,.0f}' if year < len(capital_over_time) else 'N/A' for year in intervals],
+            'Annual Expenses': [f'${expenses_over_time[year]:,.0f}' if year < len(expenses_over_time) else 'N/A' for year in intervals],
+            'Annual Withdrawal': [f'${withdrawals_over_time[year]:,.0f}' if year < len(withdrawals_over_time) else 'N/A' for year in intervals]
+        }
+        df = pd.DataFrame(data)
+        st.dataframe(df, use_container_width=True, height=300)
+
+        # Analysis
+        st.subheader("Analysis")
+        years_until_depletion = len(capital_over_time) - 1
+        if years_until_depletion < years:
+            st.warning(f'⚠️ Warning: Capital depleted after {years_until_depletion} years.')
+            
+            # Calculate required initial capital for 50 years
+            required_capital_50y = find_sustainable_value(50, annual_expenses, return_rate, inflation_rate, tax_rate, taxable_percentage, True, initial_capital, withdrawal_rate)
+            st.info(f'💡 Required initial capital for 50 years: ${required_capital_50y:,.2f}')
+            
+            # Calculate maximum sustainable withdrawal rate for 50 years
+            max_withdrawal_rate_50y = find_sustainable_value(50, annual_expenses, return_rate, inflation_rate, tax_rate, taxable_percentage, False, initial_capital, withdrawal_rate)
+            st.info(f'💡 Maximum sustainable withdrawal rate for 50 years: {max_withdrawal_rate_50y:.2f}%')
+            
+            # Calculate maximum sustainable annual expenses for 50 years
+            max_expenses_50y = max_withdrawal_rate_50y * initial_capital / 100
+            st.info(f'💡 Maximum sustainable initial annual expenses for 50 years: ${max_expenses_50y:,.2f}')
+        else:
+            st.success(f'✅ Capital lasts for the entire {years} year period.')
+            
+            # Calculate remaining capital after 50 years
+            final_capital = capital_over_time[-1]
+            st.info(f'💡 Remaining capital after 50 years: ${final_capital:,.2f}')
+            
+            # Calculate total withdrawals over 50 years
+            total_withdrawals = sum(expenses_over_time)
+            st.info(f'💡 Total withdrawals over 50 years: ${total_withdrawals:,.2f}')
+
+        # Perpetuity calculations
+        st.subheader('Perpetuity Calculations')
+        real_return_rate = return_rate - inflation_rate
+        after_tax_real_return_rate = real_return_rate * (1 - (tax_rate / 100) * (taxable_percentage / 100))
+        sustainable_withdrawal = initial_capital * (after_tax_real_return_rate / 100)
+        st.info(f"💡 Sustainable annual withdrawal in perpetuity: ${sustainable_withdrawal:,.2f}")
+        perpetuity_withdrawal_rate = (sustainable_withdrawal / initial_capital) * 100
+        st.info(f"💡 Sustainable withdrawal rate in perpetuity: {perpetuity_withdrawal_rate:.2f}%")
+        required_capital_perpetuity = annual_expenses / (after_tax_real_return_rate / 100)
+        st.info(f"💡 Required initial capital for perpetuity (based on current annual expenses): ${required_capital_perpetuity:,.2f}")
+
+        # Footer
+        st.markdown("""
+            ---
+            **Note:** This calculator provides estimates based on the inputs provided. Actual results may vary based on market conditions and other factors.
+        """)
+
+        # Custom CSS for responsiveness and highlighting the sidebar toggle button
+        st.markdown("""
+        <style>
+        @media (max-width: 768px) {
+            .stApp {
+                padding-top: 1rem;
+            }
+            .stPlotlyChart {
+                height: 60vh !important;
+            }
+            .cta {
+                background-color: #f0f0f0;
+                padding: 10px;
+                border-radius: 5px;
+                text-align: center;
+                margin-bottom: 20px;
+            }
+            .css-1lcbmhc {
+                border: 2px solid #ff4b4b !important;
+                border-radius: 5px;
+            }
+            .sidebar-content {
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+        @media (max-width: 480px) {
+            .stPlotlyChart {
+                height: 70vh !important;
+            }
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+    else:
+        st.write("Enter your parameters and click 'Calculate' to see the results.")
