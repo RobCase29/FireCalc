@@ -77,36 +77,36 @@ st.markdown("""
     Adjust the inputs to see how different scenarios affect your retirement plan.
 """)
 
-# Use columns for layout
+# Create two columns for layout
 col1, col2 = st.columns([1, 3])
 
 with col1:
-    st.sidebar.header("Input Parameters")
-    initial_capital_input = st.sidebar.text_input(
+    st.header("Input Parameters")
+    initial_capital_input = st.text_input(
         'Initial Capital',
         value="$1,000,000",
         help="Enter the initial capital amount. You can use dollar signs and commas."
     )
     initial_capital = parse_currency(initial_capital_input)
     if initial_capital is None:
-        st.sidebar.error("Please enter a valid dollar amount for Initial Capital")
+        st.error("Please enter a valid dollar amount for Initial Capital")
         initial_capital = 1000000
 
-    annual_expenses_input = st.sidebar.text_input(
+    annual_expenses_input = st.text_input(
         'Annual Expenses',
         value="$40,000",
         help="Enter your annual expenses. You can use dollar signs and commas."
     )
     annual_expenses = parse_currency(annual_expenses_input)
     if annual_expenses is None:
-        st.sidebar.error("Please enter a valid dollar amount for Annual Expenses")
+        st.error("Please enter a valid dollar amount for Annual Expenses")
         annual_expenses = 40000
 
-    withdrawal_rate = st.sidebar.slider('Annual Withdrawal Rate (%)', 0.0, 10.0, 4.0, 0.1, help="The percentage of your initial capital you plan to withdraw annually.")
-    return_rate = st.sidebar.slider('Expected Annual Return (%)', 0.0, 15.0, 10.0, 0.1, help="The expected annual return on your investments.")
-    inflation_rate = st.sidebar.slider('Expected Annual Inflation (%)', 0.0, 10.0, 3.8, 0.1, help="The expected annual inflation rate.")
-    tax_rate = st.sidebar.slider('Tax Rate (%)', 0.0, 50.0, 15.0, 0.1, help="The tax rate applied to your investment returns.")
-    taxable_percentage = st.sidebar.slider('Percentage of Capital Subject to Tax (%)', 0.0, 100.0, 50.0, 0.1, help="The percentage of your capital that is subject to tax.")
+    withdrawal_rate = st.slider('Annual Withdrawal Rate (%)', 0.0, 10.0, 4.0, 0.1, help="The percentage of your initial capital you plan to withdraw annually.")
+    return_rate = st.slider('Expected Annual Return (%)', 0.0, 15.0, 10.0, 0.1, help="The expected annual return on your investments.")
+    inflation_rate = st.slider('Expected Annual Inflation (%)', 0.0, 10.0, 3.8, 0.1, help="The expected annual inflation rate.")
+    tax_rate = st.slider('Tax Rate (%)', 0.0, 50.0, 15.0, 0.1, help="The tax rate applied to your investment returns.")
+    taxable_percentage = st.slider('Percentage of Capital Subject to Tax (%)', 0.0, 100.0, 50.0, 0.1, help="The percentage of your capital that is subject to tax.")
 
 with col2:
     st.header("Results")
@@ -127,7 +127,7 @@ with col2:
         title='Projected Capital, Expenses, and Withdrawals Over Time',
         xaxis_title='Years',
         yaxis_title='Amount ($)',
-        height=500,
+        height=400,  # Adjust height for better mobile view
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         font=dict(color='black' if current_theme == 'light' else 'white'),
@@ -142,6 +142,7 @@ with col2:
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
     # Table
+    st.subheader("Detailed Results")
     intervals = [0, 10, 20, 30, 40, 50]
     data = {
         'Years': intervals,
@@ -212,7 +213,12 @@ st.markdown("""
         padding-top: 1rem;
     }
     .stPlotlyChart {
-        height: 50vh !important;
+        height: 60vh !important;  /* Adjust height for better mobile view */
+    }
+}
+@media (max-width: 480px) {
+    .stPlotlyChart {
+        height: 70vh !important;  /* Adjust height for better mobile view */
     }
 }
 </style>
