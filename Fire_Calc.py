@@ -135,7 +135,7 @@ st.subheader("Detailed Results")
 intervals = [0, 10, 20, 30, 40, 50]
 data = {
     'Years': intervals,
-    'Remaining Capital': [f'${capital_over_time[year]:,.0ßf}' if year < len(capital_over_time) else 'N/A' for year in intervals],
+    'Remaining Capital': [f'${capital_over_time[year]:,.0f}' if year < len(capital_over_time) else 'N/A' for year in intervals],
     'Annual Expenses': [f'${expenses_over_time[year]:,.0f}' if year < len(expenses_over_time) else 'N/A' for year in intervals],
     'Annual Withdrawal': [f'${withdrawals_over_time[year]:,.0f}' if year < len(withdrawals_over_time) else 'N/A' for year in intervals]
 }
