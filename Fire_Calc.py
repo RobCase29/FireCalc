@@ -2,7 +2,6 @@ import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
 from typing import Union, Optional, Dict
-from streamlit_autorefresh import st_autorefresh
 
 # Set page configuration
 st.set_page_config(
