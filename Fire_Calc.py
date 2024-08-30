@@ -18,31 +18,22 @@ st.markdown("""
         font-family: 'Nunito', sans-serif;
     }
     .main {
-        background-color: #1e1e1e;
-        color: white;
+        background-color: var(--background-color);
+        color: var(--text-color);
     }
     .sidebar .sidebar-content {
-        background-color: #2e3b4e;
-        color: white;
+        background-color: var(--secondary-background-color);
+        color: var(--text-color);
     }
     .sidebar .sidebar-content .stTextInput, .sidebar .sidebar-content .stSlider {
-        color: white;
+        color: var(--text-color);
     }
     .sidebar .sidebar-content .stTextInput input, .sidebar .sidebar-content .stSlider .stSliderLabel {
-        color: white;
+        color: var(--text-color);
     }
     .sidebar .sidebar-content .stTextInput input {
-        background-color: #3e4c5e;
+        background-color: var(--input-background-color);
         border: 1px solid #4CAF50;
-    }
-    .sidebar .sidebar-content .stSlider .stSliderTrack {
-        background-color: #4CAF50;
-    }
-    .sidebar .sidebar-content .stSlider .stSliderTrack .stSliderTrackValue {
-        background-color: #4CAF50;
-    }
-    .sidebar .sidebar-content .stSlider .stSliderTrack .stSliderTrackValue .stSliderTrackValueLabel {
-        color: white;
     }
     .stButton>button {
         background-color: #4CAF50;
@@ -89,20 +80,34 @@ st.markdown("""
         padding: 10px;
     }
     .stTable th {
-        background-color: #3e4c5e;
-        color: white;
+        background-color: var(--secondary-background-color);
+        color: var(--text-color);
     }
     .stTable td {
-        background-color: #2e3b4e;
-        color: white;
+        background-color: var(--background-color);
+        color: var(--text-color);
     }
     .stTable tr:nth-child(even) td {
-        background-color: #3e4c5e;
+        background-color: var(--secondary-background-color);
     }
     .stTable tr:nth-child(odd) td {
-        background-color: #2e3b4e;
+        background-color: var(--background-color);
     }
     </style>
+
+    <script>
+        function updateColors() {
+            const isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            document.body.style.setProperty('--background-color', isDarkMode ? '#1e1e1e' : '#ffffff');
+            document.body.style.setProperty('--secondary-background-color', isDarkMode ? '#2e3b4e' : '#f0f2f6');
+            document.body.style.setProperty('--text-color', isDarkMode ? '#ffffff' : '#000000');
+            document.body.style.setProperty('--input-background-color', isDarkMode ? '#3e4c5e' : '#ffffff');
+        }
+
+        updateColors();
+        window.matchMedia('(prefers-color-scheme: dark)').addListener(updateColors);
+    </script>
 """, unsafe_allow_html=True)
 
 # Helper functions
@@ -202,7 +207,7 @@ fig = go.Figure()
 fig.add_trace(go.Scatter(x=list(range(len(capital_over_time))), y=capital_over_time, mode='lines', name='Capital'))
 fig.add_trace(go.Scatter(x=list(range(len(expenses_over_time))), y=expenses_over_time, mode='lines', name='Annual Expenses'))
 fig.add_trace(go.Scatter(x=list(range(len(withdrawals_over_time))), y=withdrawals_over_time, mode='lines', name='Annual Withdrawal'))
-fig.update_layout(title='Projected Capital, Expenses, and Withdrawals Over Time', xaxis_title='Years', yaxis_title='Amount ($)', height=500, plot_bgcolor='#1e1e1e', paper_bgcolor='#1e1e1e', font=dict(color='white'))
+fig.update_layout(title='Projected Capital, Expenses, and Withdrawals Over Time', xaxis_title='Years', yaxis_title='Amount ($)', height=500, plot_bgcolor='var(--background-color)', paper_bgcolor='var(--background-color)', font=dict(color='var(--text-color)'))
 st.plotly_chart(fig, use_container_width=True)
 
 # Table
