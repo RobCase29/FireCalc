@@ -73,6 +73,13 @@ st.markdown("""
     Adjust the inputs to see how different scenarios affect your retirement plan.
 """)
 
+# Call-to-action for mobile users
+st.markdown("""
+    <div class="cta">
+        👉 **Use the sidebar to input your parameters!**
+    </div>
+""", unsafe_allow_html=True)
+
 # Input section
 st.sidebar.header("Input Parameters")
 initial_capital_input = st.sidebar.text_input(
@@ -128,7 +135,7 @@ fig.update_layout(
 )
 fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey' if current_theme == 'light' else 'grey')
 fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey' if current_theme == 'light' else 'grey')
-st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'scrollZoom': False})  # Disable zoom
 
 # Table
 st.subheader("Detailed Results")
@@ -187,7 +194,7 @@ st.markdown("""
     **Note:** This calculator provides estimates based on the inputs provided. Actual results may vary based on market conditions and other factors.
 """)
 
-# Custom CSS for responsiveness
+# Custom CSS for responsiveness and highlighting the sidebar toggle button
 st.markdown("""
 <style>
 @media (max-width: 768px) {
@@ -196,6 +203,17 @@ st.markdown("""
     }
     .stPlotlyChart {
         height: 60vh !important;
+    }
+    .cta {
+        background-color: #f0f0f0;
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .css-1lcbmhc {
+        border: 2px solid #ff4b4b !important;
+        border-radius: 5px;
     }
 }
 @media (max-width: 480px) {
