@@ -90,7 +90,7 @@ st.sidebar.header("Input Parameters")
 initial_capital_input = st.sidebar.text_input(
     'Initial Capital',
     value="$500,000",
-    help="Enter the initial capital amount. You can use dollar signs and commas."
+    help="Enter the initial capital amount. You can use dollar signs and commas. Adjust based on how much you have in investments."
 )
 initial_capital = parse_currency(initial_capital_input)
 if initial_capital is None:
@@ -100,18 +100,18 @@ if initial_capital is None:
 annual_expenses_input = st.sidebar.text_input(
     'Annual Expenses',
     value="$75,000",
-    help="Enter your annual expenses. You can use dollar signs and commas."
+    help="Enter your annual expenses. You can use dollar signs and commas. Adjust based on your expected annual spending."
 )
 annual_expenses = parse_currency(annual_expenses_input)
 if annual_expenses is None:
     st.sidebar.error("Please enter a valid dollar amount for Annual Expenses")
     annual_expenses = 75000
 
-withdrawal_rate = st.sidebar.slider('Annual Withdrawal Rate (%)', 0.0, 10.0, 4.0, 0.1, help="The percentage of your initial capital you plan to withdraw annually.")
-return_rate = st.sidebar.slider('Expected Annual Return (%)', 0.0, 15.0, 10.0, 0.1, help="The expected annual return on your investments.")
-inflation_rate = st.sidebar.slider('Expected Annual Inflation (%)', 0.0, 10.0, 3.8, 0.1, help="The expected annual inflation rate.")
-tax_rate = st.sidebar.slider('Tax Rate (%)', 0.0, 50.0, 15.0, 0.1, help="The tax rate applied to your investment returns.")
-taxable_percentage = st.sidebar.slider('Percentage of Capital Subject to Tax (%)', 0.0, 100.0, 50.0, 0.1, help="The percentage of your capital that is subject to tax.")
+withdrawal_rate = st.sidebar.slider('Annual Withdrawal Rate (%)', 0.0, 10.0, 4.0, 0.1, help="The percentage of your initial capital you plan to withdraw annually. Typically around 4%.")
+return_rate = st.sidebar.slider('Expected Annual Return (%)', 0.0, 15.0, 10.0, 0.1, help="The expected annual return on your investments. Adjust based on your investment strategy.")
+inflation_rate = st.sidebar.slider('Expected Annual Inflation (%)', 0.0, 10.0, 3.8, 0.1, help="The expected annual inflation rate. Typically around 3-4%.")
+tax_rate = st.sidebar.slider('Tax Rate (%)', 0.0, 50.0, 15.0, 0.1, help="The tax rate applied to your investment returns. Adjust based on your tax bracket.")
+taxable_percentage = st.sidebar.slider('Percentage of Capital Subject to Tax (%)', 0.0, 100.0, 50.0, 0.1, help="The percentage of your capital that is subject to tax. Adjust based on your investment portfolio.")
 
 # Done button
 if st.sidebar.button('Done'):
@@ -223,6 +223,10 @@ st.markdown("""
     .css-1lcbmhc {
         border: 2px solid #ff4b4b !important;
         border-radius: 5px;
+    }
+    .sidebar-content {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
 }
 @media (max-width: 480px) {
