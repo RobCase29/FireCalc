@@ -115,7 +115,7 @@ taxable_percentage = st.sidebar.slider('Percentage of Capital Subject to Tax (%)
 
 # Done button
 if st.sidebar.button('Done'):
-    st.experimental_rerun()
+    st.session_state['done'] = True
 
 # Calculation
 years = 50
@@ -232,3 +232,15 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+
+# JavaScript to collapse the sidebar when 'Done' is clicked
+if 'done' in st.session_state:
+    st.markdown("""
+    <script>
+    const sidebar = parent.document.querySelector('.css-1lcbmhc');
+    if (sidebar) {
+        sidebar.style.display = 'none';
+    }
+    </script>
+    """, unsafe_allow_html=True)
+    del st.session_state['done']
