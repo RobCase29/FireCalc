@@ -9,102 +9,6 @@ st.set_page_config(
     page_icon="💰"
 )
 
-# Custom CSS for styling
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600&family=Quicksand:wght@400;600&display=swap');
-
-    body {
-        font-family: 'Nunito', sans-serif;
-    }
-    .main {
-        background-color: #1e1e1e;
-        color: white;
-    }
-    .sidebar .sidebar-content {
-        background-color: #2e3b4e;
-        color: white;
-    }
-    .sidebar .sidebar-content .stTextInput, .sidebar .sidebar-content .stSlider {
-        color: white;
-    }
-    .sidebar .sidebar-content .stTextInput input, .sidebar .sidebar-content .stSlider .stSliderLabel {
-        color: white;
-    }
-    .sidebar .sidebar-content .stTextInput input {
-        background-color: #3e4c5e;
-        border: 1px solid #4CAF50;
-    }
-    .sidebar .sidebar-content .stSlider .stSliderTrack {
-        background-color: #4CAF50;
-    }
-    .sidebar .sidebar-content .stSlider .stSliderTrack .stSliderTrackValue {
-        background-color: #4CAF50;
-    }
-    .sidebar .sidebar-content .stSlider .stSliderTrack .stSliderTrackValue .stSliderTrackValueLabel {
-        color: white;
-    }
-    .stButton>button {
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        padding: 10px 24px;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 16px;
-        margin: 4px 2px;
-        cursor: pointer;
-        border-radius: 12px;
-    }
-    .stButton>button:hover {
-        background-color: #45a049;
-    }
-    .stAlert {
-        border-radius: 12px;
-    }
-    .stMarkdown {
-        font-size: 16px;
-    }
-    .stTextInput label, .stSlider label {
-        font-family: 'Quicksand', sans-serif;
-        font-weight: 600;
-    }
-    .stTextInput input, .stSlider .stSliderLabel {
-        font-family: 'Nunito', sans-serif;
-    }
-    .stTextInput input {
-        border-radius: 8px;
-    }
-    .stSlider .stSliderTrack .stSliderTrackValue {
-        border-radius: 8px;
-    }
-    .stSlider .stSliderTrack .stSliderTrackValue .stSliderTrackValueLabel {
-        font-family: 'Nunito', sans-serif;
-    }
-    .stTable {
-        font-family: 'Nunito', sans-serif;
-    }
-    .stTable th, .stTable td {
-        padding: 10px;
-    }
-    .stTable th {
-        background-color: #3e4c5e;
-        color: white;
-    }
-    .stTable td {
-        background-color: #2e3b4e;
-        color: white;
-    }
-    .stTable tr:nth-child(even) td {
-        background-color: #3e4c5e;
-    }
-    .stTable tr:nth-child(odd) td {
-        background-color: #2e3b4e;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
 # Helper functions
 def parse_currency(value):
     if isinstance(value, (int, float)):
@@ -202,7 +106,15 @@ fig = go.Figure()
 fig.add_trace(go.Scatter(x=list(range(len(capital_over_time))), y=capital_over_time, mode='lines', name='Capital'))
 fig.add_trace(go.Scatter(x=list(range(len(expenses_over_time))), y=expenses_over_time, mode='lines', name='Annual Expenses'))
 fig.add_trace(go.Scatter(x=list(range(len(withdrawals_over_time))), y=withdrawals_over_time, mode='lines', name='Annual Withdrawal'))
-fig.update_layout(title='Projected Capital, Expenses, and Withdrawals Over Time', xaxis_title='Years', yaxis_title='Amount ($)', height=500, plot_bgcolor='#1e1e1e', paper_bgcolor='#1e1e1e', font=dict(color='white'))
+fig.update_layout(
+    title='Projected Capital, Expenses, and Withdrawals Over Time',
+    xaxis_title='Years',
+    yaxis_title='Amount ($)',
+    height=500,
+    plot_bgcolor='#ffffff',
+    paper_bgcolor='#ffffff',
+    font=dict(color='#212529')
+)
 st.plotly_chart(fig, use_container_width=True)
 
 # Table
@@ -263,19 +175,36 @@ st.info(f"💡 Sustainable withdrawal rate in perpetuity: {perpetuity_withdrawal
 required_capital_perpetuity = annual_expenses / (after_tax_real_return_rate / 100)
 st.info(f"💡 Required initial capital for perpetuity (based on current annual expenses): ${required_capital_perpetuity:,.2f}")
 
-# Compare current withdrawal to sustainable withdrawal
-current_withdrawal = max(annual_expenses, initial_capital * (withdrawal_rate / 100))
-if current_withdrawal > sustainable_withdrawal:
-    st.warning(
-        f"⚠️ Current withdrawal (${current_withdrawal:,.2f}) exceeds the sustainable withdrawal in perpetuity (${sustainable_withdrawal:,.2f})."
-    )
-else:
-    st.success(
-        f"✅ Current withdrawal (${current_withdrawal:,.2f}) is within the sustainable withdrawal limit for perpetuity (${sustainable_withdrawal:,.2f})."
-    )
-
 # Footer
 st.markdown("""
     ---
     **Note:** This calculator provides estimates based on the inputs provided. Actual results may vary based on market conditions and other factors.
 """)
+
+def get_css():
+    return f"""
+    <style>
+    body {{
+        font-family: 'Arial', sans-serif;
+        color: #000000;  /* Default text color */
+        background-color: #ffffff;  /* Default background color */
+    }}
+    .sidebar .sidebar-content {{
+        background-color: #f0f0f0;  /* Sidebar background color */
+    }}
+    .stButton>button {{
+        background-color: #4CAF50;
+        color: white;
+    }}
+    .stTable th {{
+        background-color: #e0e0e0;  /* Table header background color */
+        color: #000000;  /* Table header text color */
+    }}
+    .stTable td {{
+        background-color: #ffffff;  /* Table cell background color */
+        color: #000000;  /* Table cell text color */
+    }}
+    </style>
+    """
+
+st.markdown(get_css(), unsafe_allow_html=True)
