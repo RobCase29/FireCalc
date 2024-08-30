@@ -78,12 +78,6 @@ st.markdown("""
     **Summary:** This web app allows you to input your financial details and calculates how long your retirement savings will last. It also provides insights into sustainable withdrawal rates and required capital for perpetuity.
 """)
 
-# Call-to-action for mobile users
-st.markdown("""
-    <div class="cta">
-        👉 **Use the sidebar to input your parameters! Click the arrow on the top left to access the sidebar.**
-    </div>
-""", unsafe_allow_html=True)
 
 if 'show_results' not in st.session_state:
     st.session_state.show_results = False
