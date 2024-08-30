@@ -111,9 +111,9 @@ fig.update_layout(
     xaxis_title='Years',
     yaxis_title='Amount ($)',
     height=500,
-    plot_bgcolor='#ffffff',
-    paper_bgcolor='#ffffff',
-    font=dict(color='#212529')
+    plot_bgcolor='#1e1e1e',
+    paper_bgcolor='#1e1e1e',
+    font=dict(color='#ffffff')
 )
 st.plotly_chart(fig, use_container_width=True)
 
@@ -186,23 +186,42 @@ def get_css():
     <style>
     body {{
         font-family: 'Arial', sans-serif;
-        color: #000000;  /* Default text color */
-        background-color: #ffffff;  /* Default background color */
+        color: #ffffff;  /* Default text color */
+        background-color: #1e1e1e;  /* Default background color */
     }}
     .sidebar .sidebar-content {{
-        background-color: #f0f0f0;  /* Sidebar background color */
+        background-color: #2d2d2d;  /* Sidebar background color */
     }}
     .stButton>button {{
         background-color: #4CAF50;
         color: white;
     }}
     .stTable th {{
-        background-color: #e0e0e0;  /* Table header background color */
-        color: #000000;  /* Table header text color */
+        background-color: #3d3d3d;  /* Table header background color */
+        color: #ffffff;  /* Table header text color */
     }}
     .stTable td {{
-        background-color: #ffffff;  /* Table cell background color */
-        color: #000000;  /* Table cell text color */
+        background-color: #2d2d2d;  /* Table cell background color */
+        color: #ffffff;  /* Table cell text color */
+    }}
+    .stSidebar .stSidebarContent {{
+        border: 2px solid #4CAF50;  /* Make sidebar more prominent */
+        padding: 10px;
+    }}
+    .stSidebar .stSidebarContent .stTextInput, .stSidebar .stSidebarContent .stSlider {{
+        border: 2px solid #4CAF50;  /* Make input widgets more prominent */
+        padding: 5px;
+    }}
+    @media (max-width: 768px) {{
+        .sidebar .sidebar-content {{
+            width: 100%;
+        }}
+        .stButton>button {{
+            width: 100%;
+        }}
+        .stTable th, .stTable td {{
+            font-size: 12px;
+        }}
     }}
     </style>
     """
