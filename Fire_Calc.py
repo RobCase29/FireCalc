@@ -2,6 +2,13 @@ import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
 
+# Set page configuration
+st.set_page_config(
+    layout="wide",
+    page_title="Retirement Withdrawal Calculator",
+    page_icon="💰"
+)
+
 # Add this function
 def get_current_theme():
     # Create a container
@@ -71,36 +78,39 @@ st.markdown("""
 """)
 
 # Input section
-st.sidebar.header("Input Parameters")
-initial_capital_input = st.sidebar.text_input(
-    'Initial Capital',
-    value="$1,000,000",
-    help="Enter the initial capital amount. You can use dollar signs and commas."
-)
-initial_capital = parse_currency(initial_capital_input)
-if initial_capital is None:
-    st.sidebar.error("Please enter a valid dollar amount for Initial Capital")
-    initial_capital = 1000000
+with st.sidebar.expander("Input Parameters", expanded=True):
+    initial_capital_input = st.text_input(
+        'Initial Capital',
+        value="$1,000,000",
+        help="Enter the initial capital amount. You can use dollar signs and commas."
+    )
+    initial_capital = parse_currency(initial_capital_input)
+    if initial_capital is None:
+        st.error("Please enter a valid dollar amount for Initial Capital")
+        initial_capital = 1000000
 
-annual_expenses_input = st.sidebar.text_input(
-    'Annual Expenses',
-    value="$40,000",
-    help="Enter your annual expenses. You can use dollar signs and commas."
-)
-annual_expenses = parse_currency(annual_expenses_input)
-if annual_expenses is None:
-    st.sidebar.error("Please enter a valid dollar amount for Annual Expenses")
-    annual_expenses = 40000
+    annual_expenses_input = st.text_input(
+        'Annual Expenses',
+        value="$40,000",
+        help="Enter your annual expenses. You can use dollar signs and commas."
+    )
+    annual_expenses = parse_currency(annual_expenses_input)
+    if annual_expenses is None:
+        st.error("Please enter a valid dollar amount for Annual Expenses")
+        annual_expenses = 40000
 
-withdrawal_rate = st.sidebar.slider('Annual Withdrawal Rate (%)', 0.0, 10.0, 4.0, 0.1, help="The percentage of your initial capital you plan to withdraw annually.")
-return_rate = st.sidebar.slider('Expected Annual Return (%)', 0.0, 15.0, 10.0, 0.1, help="The expected annual return on your investments.")
-inflation_rate = st.sidebar.slider('Expected Annual Inflation (%)', 0.0, 10.0, 3.8, 0.1, help="The expected annual inflation rate.")
-tax_rate = st.sidebar.slider('Tax Rate (%)', 0.0, 50.0, 15.0, 0.1, help="The tax rate applied to your investment returns.")
-taxable_percentage = st.sidebar.slider('Percentage of Capital Subject to Tax (%)', 0.0, 100.0, 50.0, 0.1, help="The percentage of your capital that is subject to tax.")
+    withdrawal_rate = st.slider('Annual Withdrawal Rate (%)', 0.0, 10.0, 4.0, 0.1, help="The percentage of your initial capital you plan to withdraw annually.")
+    return_rate = st.slider('Expected Annual Return (%)', 0.0, 15.0, 10.0, 0.1, help="The expected annual return on your investments.")
+    inflation_rate = st.slider('Expected Annual Inflation (%)', 0.0, 10.0, 3.8, 0.1, help="The expected annual inflation rate.")
+    tax_rate = st.slider('Tax Rate (%)', 0.0, 50.0, 15.0, 0.1, help="The tax rate applied to your investment returns.")
+    taxable_percentage = st.slider('Percentage of Capital Subject to Tax (%)', 0.0, 100.0, 50.0, 0.1, help="The percentage of your capital that is subject to tax.")
 
 # Calculation
 years = 50
 capital_over_time, expenses_over_time, withdrawals_over_time = calculate_retirement(initial_capital, withdrawal_rate, annual_expenses, years, return_rate, inflation_rate, tax_rate, taxable_percentage)
+
+# Results section
+st.header("Results")
 
 # Detect current theme
 current_theme = get_current_theme()
@@ -117,22 +127,24 @@ fig.update_layout(
     height=500,
     plot_bgcolor='rgba(0,0,0,0)',
     paper_bgcolor='rgba(0,0,0,0)',
-    font=dict(color='black' if current_theme == 'light' else 'white')
+    font=dict(color='black' if current_theme == 'light' else 'white'),
+    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    margin=dict(l=50, r=50, t=80, b=50)
 )
 fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey' if current_theme == 'light' else 'grey')
 fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey' if current_theme == 'light' else 'grey')
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 # Table
 intervals = [0, 10, 20, 30, 40, 50]
 data = {
     'Years': intervals,
-    'Remaining Capital': [f'${capital_over_time[year]:,.2f}' if year < len(capital_over_time) else 'N/A' for year in intervals],
-    'Annual Expenses': [f'${expenses_over_time[year]:,.2f}' if year < len(expenses_over_time) else 'N/A' for year in intervals],
-    'Annual Withdrawal': [f'${withdrawals_over_time[year]:,.2f}' if year < len(withdrawals_over_time) else 'N/A' for year in intervals]
+    'Remaining Capital': [f'${capital_over_time[year]:,.0f}' if year < len(capital_over_time) else 'N/A' for year in intervals],
+    'Annual Expenses': [f'${expenses_over_time[year]:,.0f}' if year < len(expenses_over_time) else 'N/A' for year in intervals],
+    'Annual Withdrawal': [f'${withdrawals_over_time[year]:,.0f}' if year < len(withdrawals_over_time) else 'N/A' for year in intervals]
 }
 df = pd.DataFrame(data)
-st.table(df)
+st.dataframe(df, use_container_width=True)
 
 # Analysis
 years_until_depletion = len(capital_over_time) - 1
@@ -186,3 +198,16 @@ st.markdown("""
     ---
     **Note:** This calculator provides estimates based on the inputs provided. Actual results may vary based on market conditions and other factors.
 """)
+
+st.markdown("""
+<style>
+@media (max-width: 768px) {
+    .stApp {
+        padding-top: 1rem;
+    }
+    .stPlotlyChart {
+        height: 300px !important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
