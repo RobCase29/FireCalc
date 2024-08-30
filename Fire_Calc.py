@@ -2,12 +2,16 @@ import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
 
-# Set page configuration
-st.set_page_config(
-    layout="wide",
-    page_title="Retirement Withdrawal Calculator",
-    page_icon="💰"
-)
+# Add this function
+def get_current_theme():
+    # Create a container
+    container = st.container()
+    # Get the background color of the container
+    bg_color = st.get_option("theme.backgroundColor")
+    # Remove the container
+    container.empty()
+    # Determine if it's light or dark mode
+    return "light" if bg_color == "white" else "dark"
 
 # Helper functions
 def parse_currency(value):
@@ -98,8 +102,8 @@ taxable_percentage = st.sidebar.slider('Percentage of Capital Subject to Tax (%)
 years = 50
 capital_over_time, expenses_over_time, withdrawals_over_time = calculate_retirement(initial_capital, withdrawal_rate, annual_expenses, years, return_rate, inflation_rate, tax_rate, taxable_percentage)
 
-# Results section
-st.header("Results")
+# Detect current theme
+current_theme = get_current_theme()
 
 # Plot
 fig = go.Figure()
@@ -111,10 +115,12 @@ fig.update_layout(
     xaxis_title='Years',
     yaxis_title='Amount ($)',
     height=500,
-    plot_bgcolor='#1e1e1e',
-    paper_bgcolor='#1e1e1e',
-    font=dict(color='#ffffff')
+    plot_bgcolor='rgba(0,0,0,0)',
+    paper_bgcolor='rgba(0,0,0,0)',
+    font=dict(color='black' if current_theme == 'light' else 'white')
 )
+fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey' if current_theme == 'light' else 'grey')
+fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey' if current_theme == 'light' else 'grey')
 st.plotly_chart(fig, use_container_width=True)
 
 # Table
@@ -180,50 +186,3 @@ st.markdown("""
     ---
     **Note:** This calculator provides estimates based on the inputs provided. Actual results may vary based on market conditions and other factors.
 """)
-
-def get_css():
-    return f"""
-    <style>
-    body {{
-        font-family: 'Arial', sans-serif;
-        color: #ffffff;  /* Default text color */
-        background-color: #1e1e1e;  /* Default background color */
-    }}
-    .sidebar .sidebar-content {{
-        background-color: #2d2d2d;  /* Sidebar background color */
-    }}
-    .stButton>button {{
-        background-color: #4CAF50;
-        color: white;
-    }}
-    .stTable th {{
-        background-color: #3d3d3d;  /* Table header background color */
-        color: #ffffff;  /* Table header text color */
-    }}
-    .stTable td {{
-        background-color: #2d2d2d;  /* Table cell background color */
-        color: #ffffff;  /* Table cell text color */
-    }}
-    .stSidebar .stSidebarContent {{
-        border: 2px solid #4CAF50;  /* Make sidebar more prominent */
-        padding: 10px;
-    }}
-    .stSidebar .stSidebarContent .stTextInput, .stSidebar .stSidebarContent .stSlider {{
-        border: 2px solid #4CAF50;  /* Make input widgets more prominent */
-        padding: 5px;
-    }}
-    @media (max-width: 768px) {{
-        .sidebar .sidebar-content {{
-            width: 100%;
-        }}
-        .stButton>button {{
-            width: 100%;
-        }}
-        .stTable th, .stTable td {{
-            font-size: 12px;
-        }}
-    }}
-    </style>
-    """
-
-st.markdown(get_css(), unsafe_allow_html=True)
