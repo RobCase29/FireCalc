@@ -113,10 +113,14 @@ inflation_rate = st.sidebar.slider('Expected Annual Inflation (%)', 0.0, 10.0, 3
 tax_rate = st.sidebar.slider('Tax Rate (%)', 0.0, 50.0, 15.0, 0.1, help="The tax rate applied to your investment returns. Adjust based on your tax bracket.")
 taxable_percentage = st.sidebar.slider('Percentage of Capital Subject to Tax (%)', 0.0, 100.0, 50.0, 0.1, help="The percentage of your capital that is subject to tax. Adjust based on your investment portfolio.")
 
-# Done button
-if st.sidebar.button('Done', key='done_button'):
-    st.session_state['sidebar_state'] = 'collapsed'
-    st.experimental_rerun()
+if 'sidebar_state' not in st.session_state:
+    st.session_state.sidebar_state = 'expanded'
+
+def close_sidebar():
+    st.session_state.sidebar_state = 'collapsed'
+
+if st.sidebar.button('Done', key='done_button', on_click=close_sidebar):
+    pass
 
 # Calculation
 years = 50
@@ -239,17 +243,11 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # JavaScript to collapse the sidebar when 'Done' is clicked
-if st.session_state.get('sidebar_state') == 'collapsed':
-    st.markdown(
-        """
-        <style>
-        [data-testid="stSidebar"][aria-expanded="true"] > div:first-child {
-            width: 0px;
-        }
-        [data-testid="stSidebar"][aria-expanded="true"] {
-            width: 0px;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+if st.session_state.sidebar_state == 'collapsed':
+    html("""
+        <script>
+        var sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
+        sidebar.style.width = 0;
+        sidebar.style.transition = 'width 0.5s';
+        </script>
+    """)
