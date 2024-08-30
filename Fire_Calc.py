@@ -113,6 +113,10 @@ inflation_rate = st.sidebar.slider('Expected Annual Inflation (%)', 0.0, 10.0, 3
 tax_rate = st.sidebar.slider('Tax Rate (%)', 0.0, 50.0, 15.0, 0.1, help="The tax rate applied to your investment returns.")
 taxable_percentage = st.sidebar.slider('Percentage of Capital Subject to Tax (%)', 0.0, 100.0, 50.0, 0.1, help="The percentage of your capital that is subject to tax.")
 
+# Done button
+if st.sidebar.button('Done'):
+    st.experimental_rerun()
+
 # Calculation
 years = 50
 capital_over_time, expenses_over_time, withdrawals_over_time = calculate_retirement(initial_capital, withdrawal_rate, annual_expenses, years, return_rate, inflation_rate, tax_rate, taxable_percentage)
