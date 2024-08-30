@@ -73,10 +73,15 @@ st.markdown("""
     Adjust the inputs to see how different scenarios affect your retirement plan.
 """)
 
+# Simple summary of what the web app does
+st.markdown("""
+    **Summary:** This web app allows you to input your financial details and calculates how long your retirement savings will last. It also provides insights into sustainable withdrawal rates and required capital for perpetuity.
+""")
+
 # Call-to-action for mobile users
 st.markdown("""
     <div class="cta">
-        👉 **Use the sidebar to input your parameters!**
+        👉 **Use the sidebar to input your parameters! Click the arrow on the top left to access the sidebar.**
     </div>
 """, unsafe_allow_html=True)
 
@@ -135,7 +140,7 @@ fig.update_layout(
 )
 fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey' if current_theme == 'light' else 'grey')
 fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgrey' if current_theme == 'light' else 'grey')
-st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'scrollZoom': False})  # Disable zoom
+st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False, 'scrollZoom': False, 'staticPlot': True})  # Disable zoom and make plot static
 
 # Table
 st.subheader("Detailed Results")
