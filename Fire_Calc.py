@@ -114,8 +114,9 @@ tax_rate = st.sidebar.slider('Tax Rate (%)', 0.0, 50.0, 15.0, 0.1, help="The tax
 taxable_percentage = st.sidebar.slider('Percentage of Capital Subject to Tax (%)', 0.0, 100.0, 50.0, 0.1, help="The percentage of your capital that is subject to tax. Adjust based on your investment portfolio.")
 
 # Done button
-if st.sidebar.button('Done'):
-    st.session_state['done'] = True
+if st.sidebar.button('Done', key='done_button'):
+    st.session_state['sidebar_state'] = 'collapsed'
+    st.experimental_rerun()
 
 # Calculation
 years = 50
@@ -238,13 +239,17 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # JavaScript to collapse the sidebar when 'Done' is clicked
-if 'done' in st.session_state:
-    st.markdown("""
-    <script>
-    const sidebar = parent.document.querySelector('.css-1lcbmhc');
-    if (sidebar) {
-        sidebar.style.display = 'none';
-    }
-    </script>
-    """, unsafe_allow_html=True)
-    del st.session_state['done']
+if st.session_state.get('sidebar_state') == 'collapsed':
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebar"][aria-expanded="true"] > div:first-child {
+            width: 0px;
+        }
+        [data-testid="stSidebar"][aria-expanded="true"] {
+            width: 0px;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
