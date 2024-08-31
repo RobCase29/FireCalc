@@ -116,19 +116,30 @@ def calculate_retirement(initial_capital, annual_expenses, years, return_rate, i
     withdrawal_rates = [annual_expenses / initial_capital * 100]
     
     for year in range(1, years + 1):
-        current_expenses = expenses[-1] * (1 + inflation_rate/100)
-        tax = current_expenses * (tax_rate / 100)  # Apply tax to the expenses
+        # Calculate current expenses with inflation
+        current_expenses = expenses[-1] * (1 + inflation_rate / 100)
+        
+        # Calculate tax on the current expenses
+        tax = current_expenses * (tax_rate / 100)
+        
+        # Total expenses include the current expenses and the tax
         total_expenses = current_expenses + tax
         expenses.append(total_expenses)
         
+        # Calculate growth of the capital
         growth = capital[-1] * (return_rate / 100)
+        
+        # Calculate new capital after growth and expenses
         new_capital = capital[-1] + growth - total_expenses
         capital.append(max(0, new_capital))
         
+        # Calculate withdrawal rate
         withdrawal_rates.append(total_expenses / capital[-2] * 100 if capital[-2] > 0 else float('inf'))
         
+        # Break if capital is depleted
         if new_capital <= 0:
             break
+    
     return capital, expenses, withdrawal_rates
 
 def find_sustainable_value(target_years, annual_expenses, return_rate, inflation_rate, tax_rate, find_capital=True, initial_value=1000000):
