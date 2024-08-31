@@ -139,25 +139,34 @@ def calculate_retirement(initial_capital, annual_expenses, years, return_rate, i
     
     return capital, expenses, withdrawal_rates
 
-def find_sustainable_value(target_years, annual_expenses, return_rate, inflation_rate, find_capital=True, initial_value=1000000):
-    low, high = 0, initial_value * 10 if find_capital else annual_expenses * 2
-    while high - low > (1 if find_capital else 0.01):
-        mid = (low + high) / 2
-        if find_capital:
-            capital, _, _ = calculate_retirement(mid, annual_expenses, target_years, return_rate, inflation_rate)
-        else:
-            capital, _, _ = calculate_retirement(initial_value, mid, target_years, return_rate, inflation_rate)
-        if len(capital) > target_years:
-            high = mid
-        else:
-            low = mid
-    return high
+def find_sustainable_value(years, annual_expenses, return_rate, inflation_rate, find_capital, initial_capital):
+    if find_capital:
+        # Find the required initial capital for the given period
+        low, high = 0, initial_capital * 10
+        while low < high:
+            mid = (low + high) / 2
+            capital, _, _ = calculate_retirement(mid, annual_expenses, years, return_rate, inflation_rate)
+            if capital[-1] > 0:
+                high = mid
+            else:
+                low = mid + 1
+        return low
+    else:
+        # Find the maximum sustainable annual expenses for the given period
+        low, high = 0, annual_expenses * 10
+        while low < high:
+            mid = (low + high) / 2
+            capital, _, _ = calculate_retirement(initial_capital, mid, years, return_rate, inflation_rate)
+            if capital[-1] > 0:
+                low = mid + 1
+            else:
+                high = mid
+        return high
 
-# Title and description
-st.title('💰 Retirement Withdrawal Calculator')
+# Summary section
+st.title("💰 Retirement Withdrawal Calculator")
 st.markdown("""
-    This calculator helps you estimate how long your retirement savings will last based on your initial capital, annual expenses, and other factors.
-    Adjust the inputs to see how different scenarios affect your retirement plan.
+This calculator helps you estimate how long your retirement savings will last based on your initial capital, annual expenses, and other factors. Adjust the inputs to see how different scenarios affect your retirement plan.
 """)
 
 # Input section
@@ -194,8 +203,10 @@ else:
 return_rate = st.sidebar.slider('Expected Annual Return (%)', 0.0, 15.0, 10.0, 0.1, help="The expected annual return on your investments.")
 inflation_rate = st.sidebar.slider('Expected Annual Inflation (%)', 0.0, 10.0, 3.8, 0.1, help="The expected annual inflation rate.")
 
+# Number of Years Input
+years = st.sidebar.slider('Number of Years to Simulate', 1, 100, 30, help="The number of years to simulate.")
+
 # Calculation
-years = 50
 capital_over_time, expenses_over_time, withdrawal_rates = calculate_retirement(initial_capital, annual_expenses, years, return_rate, inflation_rate)
 
 # Results section
@@ -209,15 +220,20 @@ fig.update_layout(title='Projected Capital, Expenses, and Withdrawals Over Time'
 st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
 
 # Table
-intervals = [0, 10, 20, 30, 40, 50]
+intervals = list(range(0, years + 1))  # Create a list of years from 0 to the specified number of years
 data = {
-    'Years': intervals,
+    'Year': intervals,
     'Remaining Capital': [f'${capital_over_time[year]:,.2f}' if year < len(capital_over_time) else 'N/A' for year in intervals],
     'Annual Expenses': [f'${expenses_over_time[year]:,.2f}' if year < len(expenses_over_time) else 'N/A' for year in intervals],
     'Withdrawal Rate': [f'{withdrawal_rates[year]:.2f}%' if year < len(withdrawal_rates) else 'N/A' for year in intervals]
 }
 df = pd.DataFrame(data)
-st.table(df)
+
+# Convert DataFrame to HTML and display it using st.markdown
+st.markdown(
+    df.to_html(index=False, escape=False),
+    unsafe_allow_html=True
+)
 
 # Initial withdrawal rate
 initial_withdrawal_rate = annual_expenses / initial_capital * 100
@@ -228,23 +244,23 @@ years_until_depletion = len(capital_over_time) - 1
 if years_until_depletion < years:
     st.warning(f'⚠️ Warning: Capital depleted after {years_until_depletion} years.')
     
-    # Calculate required initial capital for 50 years
-    required_capital_50y = find_sustainable_value(50, annual_expenses, return_rate, inflation_rate, True, initial_capital)
-    st.info(f'💡 Required initial capital for 50 years: ${required_capital_50y:,.2f}')
+    # Calculate required initial capital for the specified number of years
+    required_capital = find_sustainable_value(years, annual_expenses, return_rate, inflation_rate, True, initial_capital)
+    st.info(f'💡 Required initial capital for {years} years: ${required_capital:,.2f}')
     
-    # Calculate maximum sustainable annual expenses for 50 years
-    max_expenses_50y = find_sustainable_value(50, annual_expenses, return_rate, inflation_rate, False, initial_capital)
-    st.info(f'💡 Maximum sustainable initial annual expenses for 50 years: ${max_expenses_50y:,.2f}')
+    # Calculate maximum sustainable annual expenses for the specified number of years
+    max_expenses = find_sustainable_value(years, annual_expenses, return_rate, inflation_rate, False, initial_capital)
+    st.info(f'💡 Maximum sustainable initial annual expenses for {years} years: ${max_expenses:,.2f}')
 else:
     st.success(f'✅ Capital lasts for the entire {years} year period.')
     
-    # Calculate remaining capital after 50 years
+    # Calculate remaining capital after the specified number of years
     final_capital = capital_over_time[-1]
-    st.info(f'💡 Remaining capital after 50 years: ${final_capital:,.2f}')
+    st.info(f'💡 Remaining capital after {years} years: ${final_capital:,.2f}')
     
-    # Calculate total withdrawals over 50 years
+    # Calculate total withdrawals over the specified number of years
     total_withdrawals = sum(expenses_over_time)
-    st.info(f'💡 Total withdrawals over 50 years: ${total_withdrawals:,.2f}')
+    st.info(f'💡 Total withdrawals over {years} years: ${total_withdrawals:,.2f}')
 
 # Perpetuity calculations
 st.subheader('Perpetuity Calculations')
