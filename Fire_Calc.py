@@ -113,27 +113,23 @@ def format_currency(value: float) -> str:
 def calculate_retirement(initial_capital, annual_expenses, years, return_rate, inflation_rate, tax_rate):
     capital = [initial_capital]
     expenses = [annual_expenses]
-    withdrawals = [annual_expenses]
     withdrawal_rates = [annual_expenses / initial_capital * 100]
     
     for year in range(1, years + 1):
         current_expenses = expenses[-1] * (1 + inflation_rate/100)
-        expenses.append(current_expenses)
-        
-        withdrawal = current_expenses
-        withdrawals.append(withdrawal)
+        tax = current_expenses * (tax_rate / 100)  # Apply tax to the expenses
+        total_expenses = current_expenses + tax
+        expenses.append(total_expenses)
         
         growth = capital[-1] * (return_rate / 100)
-        tax = growth * (tax_rate / 100)
-        
-        new_capital = capital[-1] + growth - tax - withdrawal
+        new_capital = capital[-1] + growth - total_expenses
         capital.append(max(0, new_capital))
         
-        withdrawal_rates.append(withdrawal / capital[-2] * 100 if capital[-2] > 0 else float('inf'))
+        withdrawal_rates.append(total_expenses / capital[-2] * 100 if capital[-2] > 0 else float('inf'))
         
         if new_capital <= 0:
             break
-    return capital, expenses, withdrawals, withdrawal_rates
+    return capital, expenses, withdrawal_rates
 
 def find_sustainable_value(target_years, annual_expenses, return_rate, inflation_rate, tax_rate, find_capital=True, initial_value=1000000):
     low, high = 0, initial_value * 10 if find_capital else annual_expenses * 2
@@ -193,7 +189,7 @@ tax_rate = st.sidebar.slider('Tax Rate (%)', 0.0, 50.0, 15.0, 0.1, help="The tax
 
 # Calculation
 years = 50
-capital_over_time, expenses_over_time, withdrawals_over_time, withdrawal_rates = calculate_retirement(initial_capital, annual_expenses, years, return_rate, inflation_rate, tax_rate)
+capital_over_time, expenses_over_time, withdrawal_rates = calculate_retirement(initial_capital, annual_expenses, years, return_rate, inflation_rate, tax_rate)
 
 # Results section
 st.header("Results")
@@ -202,7 +198,6 @@ st.header("Results")
 fig = go.Figure()
 fig.add_trace(go.Scatter(x=list(range(len(capital_over_time))), y=capital_over_time, mode='lines', name='Capital'))
 fig.add_trace(go.Scatter(x=list(range(len(expenses_over_time))), y=expenses_over_time, mode='lines', name='Annual Expenses'))
-fig.add_trace(go.Scatter(x=list(range(len(withdrawals_over_time))), y=withdrawals_over_time, mode='lines', name='Annual Withdrawal'))
 fig.update_layout(title='Projected Capital, Expenses, and Withdrawals Over Time', xaxis_title='Years', yaxis_title='Amount ($)', height=500, plot_bgcolor='var(--background-color)', paper_bgcolor='var(--background-color)', font=dict(color='var(--text-color)'))
 st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
 
@@ -212,7 +207,6 @@ data = {
     'Years': intervals,
     'Remaining Capital': [f'${capital_over_time[year]:,.2f}' if year < len(capital_over_time) else 'N/A' for year in intervals],
     'Annual Expenses': [f'${expenses_over_time[year]:,.2f}' if year < len(expenses_over_time) else 'N/A' for year in intervals],
-    'Annual Withdrawal': [f'${withdrawals_over_time[year]:,.2f}' if year < len(withdrawals_over_time) else 'N/A' for year in intervals],
     'Withdrawal Rate': [f'{withdrawal_rates[year]:.2f}%' if year < len(withdrawal_rates) else 'N/A' for year in intervals]
 }
 df = pd.DataFrame(data)
@@ -242,7 +236,7 @@ else:
     st.info(f'💡 Remaining capital after 50 years: ${final_capital:,.2f}')
     
     # Calculate total withdrawals over 50 years
-    total_withdrawals = sum(withdrawals_over_time)
+    total_withdrawals = sum(expenses_over_time)
     st.info(f'💡 Total withdrawals over 50 years: ${total_withdrawals:,.2f}')
 
 # Perpetuity calculations
