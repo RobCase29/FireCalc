@@ -110,7 +110,7 @@ def parse_currency(value: Union[str, int, float]) -> Optional[float]:
 def format_currency(value: float) -> str:
     return f"${value:,.2f}"
 
-def calculate_retirement(initial_capital, annual_expenses, years, return_rate, inflation_rate, tax_rate):
+def calculate_retirement(initial_capital, annual_expenses, years, return_rate, inflation_rate):
     capital = [initial_capital]
     expenses = [annual_expenses]
     withdrawal_rates = [annual_expenses / initial_capital * 100]
@@ -119,11 +119,8 @@ def calculate_retirement(initial_capital, annual_expenses, years, return_rate, i
         # Calculate current expenses with inflation
         current_expenses = expenses[-1] * (1 + inflation_rate / 100)
         
-        # Calculate tax on the current expenses
-        tax = current_expenses * (tax_rate / 100)
-        
-        # Total expenses include the current expenses and the tax
-        total_expenses = current_expenses + tax
+        # Total expenses are just the current expenses
+        total_expenses = current_expenses
         expenses.append(total_expenses)
         
         # Calculate growth of the capital
@@ -142,14 +139,14 @@ def calculate_retirement(initial_capital, annual_expenses, years, return_rate, i
     
     return capital, expenses, withdrawal_rates
 
-def find_sustainable_value(target_years, annual_expenses, return_rate, inflation_rate, tax_rate, find_capital=True, initial_value=1000000):
+def find_sustainable_value(target_years, annual_expenses, return_rate, inflation_rate, find_capital=True, initial_value=1000000):
     low, high = 0, initial_value * 10 if find_capital else annual_expenses * 2
     while high - low > (1 if find_capital else 0.01):
         mid = (low + high) / 2
         if find_capital:
-            capital, _, _ = calculate_retirement(mid, annual_expenses, target_years, return_rate, inflation_rate, tax_rate)
+            capital, _, _ = calculate_retirement(mid, annual_expenses, target_years, return_rate, inflation_rate)
         else:
-            capital, _, _ = calculate_retirement(initial_value, mid, target_years, return_rate, inflation_rate, tax_rate)
+            capital, _, _ = calculate_retirement(initial_value, mid, target_years, return_rate, inflation_rate)
         if len(capital) > target_years:
             high = mid
         else:
@@ -196,11 +193,10 @@ else:
 
 return_rate = st.sidebar.slider('Expected Annual Return (%)', 0.0, 15.0, 10.0, 0.1, help="The expected annual return on your investments.")
 inflation_rate = st.sidebar.slider('Expected Annual Inflation (%)', 0.0, 10.0, 3.8, 0.1, help="The expected annual inflation rate.")
-tax_rate = st.sidebar.slider('Tax Rate (%)', 0.0, 50.0, 15.0, 0.1, help="The tax rate applied to your investment returns.")
 
 # Calculation
 years = 50
-capital_over_time, expenses_over_time, withdrawal_rates = calculate_retirement(initial_capital, annual_expenses, years, return_rate, inflation_rate, tax_rate)
+capital_over_time, expenses_over_time, withdrawal_rates = calculate_retirement(initial_capital, annual_expenses, years, return_rate, inflation_rate)
 
 # Results section
 st.header("Results")
@@ -233,11 +229,11 @@ if years_until_depletion < years:
     st.warning(f'⚠️ Warning: Capital depleted after {years_until_depletion} years.')
     
     # Calculate required initial capital for 50 years
-    required_capital_50y = find_sustainable_value(50, annual_expenses, return_rate, inflation_rate, tax_rate, True, initial_capital)
+    required_capital_50y = find_sustainable_value(50, annual_expenses, return_rate, inflation_rate, True, initial_capital)
     st.info(f'💡 Required initial capital for 50 years: ${required_capital_50y:,.2f}')
     
     # Calculate maximum sustainable annual expenses for 50 years
-    max_expenses_50y = find_sustainable_value(50, annual_expenses, return_rate, inflation_rate, tax_rate, False, initial_capital)
+    max_expenses_50y = find_sustainable_value(50, annual_expenses, return_rate, inflation_rate, False, initial_capital)
     st.info(f'💡 Maximum sustainable initial annual expenses for 50 years: ${max_expenses_50y:,.2f}')
 else:
     st.success(f'✅ Capital lasts for the entire {years} year period.')
@@ -253,12 +249,11 @@ else:
 # Perpetuity calculations
 st.subheader('Perpetuity Calculations')
 
-# Calculate the real rate of return (after inflation and taxes)
+# Calculate the real rate of return (after inflation)
 real_return_rate = return_rate - inflation_rate
-after_tax_real_return_rate = real_return_rate * (1 - (tax_rate / 100))
 
 # Calculate the sustainable withdrawal amount in perpetuity
-sustainable_withdrawal = initial_capital * (after_tax_real_return_rate / 100)
+sustainable_withdrawal = initial_capital * (real_return_rate / 100)
 
 st.info(f"💡 Sustainable annual withdrawal in perpetuity: ${sustainable_withdrawal:,.2f}")
 
@@ -267,7 +262,7 @@ perpetuity_withdrawal_rate = (sustainable_withdrawal / initial_capital) * 100
 st.info(f"💡 Sustainable withdrawal rate in perpetuity: {perpetuity_withdrawal_rate:.2f}%")
 
 # Calculate required initial capital for perpetuity based on current annual expenses
-required_capital_perpetuity = annual_expenses / (after_tax_real_return_rate / 100)
+required_capital_perpetuity = annual_expenses / (real_return_rate / 100)
 st.info(f"💡 Required initial capital for perpetuity (based on current annual expenses): ${required_capital_perpetuity:,.2f}")
 
 # Compare current withdrawal to sustainable withdrawal
