@@ -136,9 +136,9 @@ def find_sustainable_value(target_years, annual_expenses, return_rate, inflation
     while high - low > (1 if find_capital else 0.01):
         mid = (low + high) / 2
         if find_capital:
-            capital, _, _, _ = calculate_retirement(mid, annual_expenses, target_years, return_rate, inflation_rate, tax_rate)
+            capital, _, _ = calculate_retirement(mid, annual_expenses, target_years, return_rate, inflation_rate, tax_rate)
         else:
-            capital, _, _, _ = calculate_retirement(initial_value, mid, target_years, return_rate, inflation_rate, tax_rate)
+            capital, _, _ = calculate_retirement(initial_value, mid, target_years, return_rate, inflation_rate, tax_rate)
         if len(capital) > target_years:
             high = mid
         else:
