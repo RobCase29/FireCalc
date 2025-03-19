@@ -1,20 +1,34 @@
 import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
-from typing import Union, Optional, Dict
+from typing import Union, Optional, Dict, List
 import numpy as np
 from dataclasses import dataclass
 
-# Set page configuration
+# Disable Streamlit's welcome screen
 st.set_page_config(
     layout="wide",
     page_title="Retirement Withdrawal Calculator",
     page_icon="💰"
 )
 
+# Disable the welcome screen message
+st.markdown("""
+    <style>
+        #MainMenu {visibility: hidden;}
+        footer {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
+
 # Custom CSS for styling
 st.markdown("""
     <style>
+    :root {
+        --background-color: #ffffff;
+        --secondary-background-color: #f0f2f6;
+        --text-color: #262730;
+        --input-background-color: #ffffff;
+    }
     @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600&family=Quicksand:wght@400;600&display=swap');
 
     body {
@@ -112,6 +126,7 @@ def parse_currency(value: Union[str, int, float]) -> Optional[float]:
 def format_currency(value: float) -> str:
     return f"${value:,.2f}"
 
+@st.cache_data
 def calculate_retirement(initial_capital, annual_expenses, years, return_rate, inflation_rate):
     capital = [initial_capital]
     expenses = [annual_expenses]
@@ -141,29 +156,32 @@ def calculate_retirement(initial_capital, annual_expenses, years, return_rate, i
     
     return capital, expenses, withdrawal_rates
 
+@st.cache_data
 def find_sustainable_value(years, annual_expenses, return_rate, inflation_rate, find_capital, initial_capital):
     if find_capital:
         # Find the required initial capital for the given period
         low, high = 0, initial_capital * 10
-        while low < high:
+        epsilon = 0.01  # Small value to stop when we're close enough
+        while high - low > epsilon:
             mid = (low + high) / 2
             capital, _, _ = calculate_retirement(mid, annual_expenses, years, return_rate, inflation_rate)
             if capital[-1] > 0:
                 high = mid
             else:
-                low = mid + 1
-        return low
+                low = mid
+        return high  # Return the higher bound to ensure we have enough capital
     else:
         # Find the maximum sustainable annual expenses for the given period
         low, high = 0, annual_expenses * 10
-        while low < high:
+        epsilon = 0.01  # Small value to stop when we're close enough
+        while high - low > epsilon:
             mid = (low + high) / 2
             capital, _, _ = calculate_retirement(initial_capital, mid, years, return_rate, inflation_rate)
             if capital[-1] > 0:
-                low = mid + 1
+                low = mid
             else:
                 high = mid
-        return high
+        return low  # Return the lower bound to be conservative with expenses
 
 # Summary section
 st.title("💰 Retirement Withdrawal Calculator")
@@ -208,97 +226,111 @@ inflation_rate = st.sidebar.slider('Expected Annual Inflation (%)', 0.0, 10.0, 3
 # Number of Years Input
 years = st.sidebar.slider('Number of Years to Simulate', 1, 100, 30, help="The number of years to simulate.")
 
-# Calculation
-capital_over_time, expenses_over_time, withdrawal_rates = calculate_retirement(initial_capital, annual_expenses, years, return_rate, inflation_rate)
+# Validation and Calculations
+try:
+    if initial_capital <= 0:
+        st.error("Initial capital must be greater than zero.")
+    elif annual_expenses <= 0:
+        st.error("Annual expenses must be greater than zero.")
+    elif annual_expenses > initial_capital:
+        st.warning("Warning: Annual expenses exceed initial capital. Your savings may deplete quickly.")
+        capital_over_time, expenses_over_time, withdrawal_rates = calculate_retirement(initial_capital, annual_expenses, years, return_rate, inflation_rate)
+    else:
+        capital_over_time, expenses_over_time, withdrawal_rates = calculate_retirement(initial_capital, annual_expenses, years, return_rate, inflation_rate)
 
-# Results section
-st.header("Results")
+    # Results section
+    if len(capital_over_time) > 1:  # Only show results if we have valid calculations
+        st.header("Results")
+        
+        # Plot
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=list(range(len(capital_over_time))), y=capital_over_time, mode='lines', name='Capital'))
+        fig.add_trace(go.Scatter(x=list(range(len(expenses_over_time))), y=expenses_over_time, mode='lines', name='Annual Expenses'))
+        fig.update_layout(
+            title='Projected Capital, Expenses, and Withdrawals Over Time',
+            xaxis_title='Years',
+            yaxis_title='Amount ($)',
+            height=500,
+            template='plotly_white'
+        )
+        st.plotly_chart(fig, use_container_width=True)
 
-# Plot
-fig = go.Figure()
-fig.add_trace(go.Scatter(x=list(range(len(capital_over_time))), y=capital_over_time, mode='lines', name='Capital'))
-fig.add_trace(go.Scatter(x=list(range(len(expenses_over_time))), y=expenses_over_time, mode='lines', name='Annual Expenses'))
-fig.update_layout(title='Projected Capital, Expenses, and Withdrawals Over Time', xaxis_title='Years', yaxis_title='Amount ($)', height=500, plot_bgcolor='var(--background-color)', paper_bgcolor='var(--background-color)', font=dict(color='var(--text-color)'))
-st.plotly_chart(fig, use_container_width=True, config={'staticPlot': True})
+        # Table
+        intervals = list(range(0, years + 1))
+        data = {
+            'Year': intervals,
+            'Remaining Capital': [format_currency(capital_over_time[year]) if year < len(capital_over_time) else 'N/A' for year in intervals],
+            'Annual Expenses': [format_currency(expenses_over_time[year]) if year < len(expenses_over_time) else 'N/A' for year in intervals],
+            'Withdrawal Rate': [f'{withdrawal_rates[year]:.2f}%' if year < len(withdrawal_rates) else 'N/A' for year in intervals]
+        }
+        df = pd.DataFrame(data)
+        st.dataframe(df, use_container_width=True)
 
-# Table
-intervals = list(range(0, years + 1))  # Create a list of years from 0 to the specified number of years
-data = {
-    'Year': intervals,
-    'Remaining Capital': [f'${capital_over_time[year]:,.2f}' if year < len(capital_over_time) else 'N/A' for year in intervals],
-    'Annual Expenses': [f'${expenses_over_time[year]:,.2f}' if year < len(expenses_over_time) else 'N/A' for year in intervals],
-    'Withdrawal Rate': [f'{withdrawal_rates[year]:.2f}%' if year < len(withdrawal_rates) else 'N/A' for year in intervals]
-}
-df = pd.DataFrame(data)
+        # Initial withdrawal rate
+        initial_withdrawal_rate = annual_expenses / initial_capital * 100
+        st.info(f"💡 Initial withdrawal rate: {initial_withdrawal_rate:.2f}%")
 
-# Convert DataFrame to HTML and display it using st.markdown
-st.markdown(
-    df.to_html(index=False, escape=False),
-    unsafe_allow_html=True
-)
+        # Analysis
+        years_until_depletion = len(capital_over_time) - 1
+        if years_until_depletion < years:
+            st.warning(f'⚠️ Warning: Capital depleted after {years_until_depletion} years.')
+            
+            # Calculate required initial capital for the specified number of years
+            required_capital = find_sustainable_value(years, annual_expenses, return_rate, inflation_rate, True, initial_capital)
+            st.info(f'💡 Required initial capital for {years} years: ${required_capital:,.2f}')
+            
+            # Calculate maximum sustainable annual expenses for the specified number of years
+            max_expenses = find_sustainable_value(years, annual_expenses, return_rate, inflation_rate, False, initial_capital)
+            st.info(f'💡 Maximum sustainable initial annual expenses for {years} years: ${max_expenses:,.2f}')
+        else:
+            st.success(f'✅ Capital lasts for the entire {years} year period.')
+            
+            # Calculate remaining capital after the specified number of years
+            final_capital = capital_over_time[-1]
+            st.info(f'💡 Remaining capital after {years} years: ${final_capital:,.2f}')
+            
+            # Calculate total withdrawals over the specified number of years
+            total_withdrawals = sum(expenses_over_time)
+            st.info(f'💡 Total withdrawals over {years} years: ${total_withdrawals:,.2f}')
 
-# Initial withdrawal rate
-initial_withdrawal_rate = annual_expenses / initial_capital * 100
-st.info(f"💡 Initial withdrawal rate: {initial_withdrawal_rate:.2f}%")
+        # Perpetuity calculations
+        st.subheader('Perpetuity Calculations')
 
-# Analysis
-years_until_depletion = len(capital_over_time) - 1
-if years_until_depletion < years:
-    st.warning(f'⚠️ Warning: Capital depleted after {years_until_depletion} years.')
-    
-    # Calculate required initial capital for the specified number of years
-    required_capital = find_sustainable_value(years, annual_expenses, return_rate, inflation_rate, True, initial_capital)
-    st.info(f'💡 Required initial capital for {years} years: ${required_capital:,.2f}')
-    
-    # Calculate maximum sustainable annual expenses for the specified number of years
-    max_expenses = find_sustainable_value(years, annual_expenses, return_rate, inflation_rate, False, initial_capital)
-    st.info(f'💡 Maximum sustainable initial annual expenses for {years} years: ${max_expenses:,.2f}')
-else:
-    st.success(f'✅ Capital lasts for the entire {years} year period.')
-    
-    # Calculate remaining capital after the specified number of years
-    final_capital = capital_over_time[-1]
-    st.info(f'💡 Remaining capital after {years} years: ${final_capital:,.2f}')
-    
-    # Calculate total withdrawals over the specified number of years
-    total_withdrawals = sum(expenses_over_time)
-    st.info(f'💡 Total withdrawals over {years} years: ${total_withdrawals:,.2f}')
+        # Calculate the real rate of return (after inflation)
+        real_return_rate = return_rate - inflation_rate
 
-# Perpetuity calculations
-st.subheader('Perpetuity Calculations')
+        # Calculate the sustainable withdrawal amount in perpetuity
+        sustainable_withdrawal = initial_capital * (real_return_rate / 100)
 
-# Calculate the real rate of return (after inflation)
-real_return_rate = return_rate - inflation_rate
+        st.info(f"💡 Sustainable annual withdrawal in perpetuity: ${sustainable_withdrawal:,.2f}")
 
-# Calculate the sustainable withdrawal amount in perpetuity
-sustainable_withdrawal = initial_capital * (real_return_rate / 100)
+        # Calculate the withdrawal rate as a percentage of initial capital
+        perpetual_withdrawal_rate = (sustainable_withdrawal / initial_capital) * 100
+        st.info(f"💡 Sustainable withdrawal rate in perpetuity: {perpetual_withdrawal_rate:.2f}%")
 
-st.info(f"💡 Sustainable annual withdrawal in perpetuity: ${sustainable_withdrawal:,.2f}")
+        # Calculate required initial capital for perpetuity based on current annual expenses
+        required_capital_perpetuity = annual_expenses / (real_return_rate / 100)
+        st.info(f"💡 Required initial capital for perpetuity (based on current annual expenses): ${required_capital_perpetuity:,.2f}")
 
-# Calculate the withdrawal rate as a percentage of initial capital
-perpetuity_withdrawal_rate = (sustainable_withdrawal / initial_capital) * 100
-st.info(f"💡 Sustainable withdrawal rate in perpetuity: {perpetuity_withdrawal_rate:.2f}%")
+        # Compare current withdrawal to sustainable withdrawal
+        current_withdrawal = annual_expenses
+        if current_withdrawal > sustainable_withdrawal:
+            st.warning(
+                f"⚠️ Current withdrawal (${current_withdrawal:,.2f}) exceeds the sustainable withdrawal in perpetuity (${sustainable_withdrawal:,.2f})."
+            )
+        else:
+            st.success(
+                f"✅ Current withdrawal (${current_withdrawal:,.2f}) is within the sustainable withdrawal limit for perpetuity (${sustainable_withdrawal:,.2f})."
+            )
 
-# Calculate required initial capital for perpetuity based on current annual expenses
-required_capital_perpetuity = annual_expenses / (real_return_rate / 100)
-st.info(f"💡 Required initial capital for perpetuity (based on current annual expenses): ${required_capital_perpetuity:,.2f}")
-
-# Compare current withdrawal to sustainable withdrawal
-current_withdrawal = annual_expenses
-if current_withdrawal > sustainable_withdrawal:
-    st.warning(
-        f"⚠️ Current withdrawal (${current_withdrawal:,.2f}) exceeds the sustainable withdrawal in perpetuity (${sustainable_withdrawal:,.2f})."
-    )
-else:
-    st.success(
-        f"✅ Current withdrawal (${current_withdrawal:,.2f}) is within the sustainable withdrawal limit for perpetuity (${sustainable_withdrawal:,.2f})."
-    )
-
-# Footer
-st.markdown("""
-    ---
-    **Note:** This calculator provides estimates based on the inputs provided. Actual results may vary based on market conditions and other factors.
-""")
+        # Footer
+        st.markdown("""
+            ---
+            **Note:** This calculator provides estimates based on the inputs provided. Actual results may vary based on market conditions and other factors.
+        """)
+except Exception as e:
+    st.error(f"An error occurred during calculations: {str(e)}")
+    st.stop()
 
 @dataclass
 class RetirementInputs:
