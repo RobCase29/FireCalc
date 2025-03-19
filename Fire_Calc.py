@@ -2,6 +2,8 @@ import streamlit as st
 import plotly.graph_objects as go
 import pandas as pd
 from typing import Union, Optional, Dict
+import numpy as np
+from dataclasses import dataclass
 
 # Set page configuration
 st.set_page_config(
@@ -297,3 +299,140 @@ st.markdown("""
     ---
     **Note:** This calculator provides estimates based on the inputs provided. Actual results may vary based on market conditions and other factors.
 """)
+
+@dataclass
+class RetirementInputs:
+    current_age: int
+    retirement_age: int
+    life_expectancy: int = 90
+    current_savings: float = 0
+    monthly_savings: float = 0
+    annual_return_rate: float = 0.07
+    inflation_rate: float = 0.03
+    annual_expenses: float = 0
+    additional_income: float = 0
+    risk_tolerance: str = "moderate"  # conservative, moderate, aggressive
+    tax_rate: float = 0.25
+    portfolio_allocation: Dict[str, float] = None
+
+class ModernRetirementCalculator:
+    def __init__(self, inputs: RetirementInputs):
+        self.inputs = inputs
+        self.portfolio_allocations = {
+            "conservative": {"stocks": 0.4, "bonds": 0.5, "cash": 0.1},
+            "moderate": {"stocks": 0.6, "bonds": 0.3, "cash": 0.1},
+            "aggressive": {"stocks": 0.8, "bonds": 0.15, "cash": 0.05}
+        }
+        
+        # Historical return assumptions
+        self.asset_returns = {
+            "stocks": {"mean": 0.10, "std": 0.15},
+            "bonds": {"mean": 0.05, "std": 0.06},
+            "cash": {"mean": 0.02, "std": 0.01}
+        }
+
+    def run_monte_carlo_simulation(self, num_simulations: int = 1000) -> pd.DataFrame:
+        """Run Monte Carlo simulation for retirement projections"""
+        years = self.inputs.life_expectancy - self.inputs.current_age
+        months = years * 12
+        results = []
+
+        for _ in range(num_simulations):
+            portfolio = self.simulate_portfolio_growth(months)
+            results.append(portfolio)
+
+        return pd.DataFrame(results).T
+
+    def simulate_portfolio_growth(self, months: int) -> List[float]:
+        """Simulate monthly portfolio growth with realistic market conditions"""
+        portfolio_value = [self.inputs.current_savings]
+        allocation = self.portfolio_allocations[self.inputs.risk_tolerance]
+
+        for _ in range(months):
+            current_value = portfolio_value[-1]
+            monthly_return = self.calculate_monthly_return(allocation)
+            
+            # Apply monthly return and add contributions
+            new_value = current_value * (1 + monthly_return) + self.inputs.monthly_savings
+            portfolio_value.append(new_value)
+
+        return portfolio_value
+
+    def calculate_monthly_return(self, allocation: Dict[str, float]) -> float:
+        """Calculate monthly return based on portfolio allocation"""
+        monthly_return = 0
+        for asset, weight in allocation.items():
+            mean = self.asset_returns[asset]["mean"] / 12
+            std = self.asset_returns[asset]["std"] / np.sqrt(12)
+            monthly_return += weight * np.random.normal(mean, std)
+        return monthly_return
+
+    def get_retirement_analysis(self) -> Dict:
+        """Generate comprehensive retirement analysis"""
+        simulations = self.run_monte_carlo_simulation()
+        
+        return {
+            "success_probability": self.calculate_success_probability(simulations),
+            "projected_outcomes": self.get_projection_percentiles(simulations),
+            "withdrawal_strategy": self.analyze_withdrawal_strategy(simulations),
+            "risk_analysis": self.analyze_risk_metrics(simulations)
+        }
+
+    def calculate_success_probability(self, simulations: pd.DataFrame) -> float:
+        """Calculate probability of retirement success"""
+        final_values = simulations.iloc[-1]
+        required_amount = self.calculate_required_nest_egg()
+        return (final_values >= required_amount).mean()
+
+    def calculate_required_nest_egg(self) -> float:
+        """Calculate required nest egg using dynamic SWR"""
+        years_in_retirement = self.inputs.life_expectancy - self.inputs.retirement_age
+        inflation_adjusted_expenses = self.inputs.annual_expenses * \
+            (1 + self.inputs.inflation_rate) ** (self.inputs.retirement_age - self.inputs.current_age)
+        # Using dynamic SWR based on retirement duration
+        safe_withdrawal_rate = 0.04 if years_in_retirement <= 30 else 0.03
+        return inflation_adjusted_expenses / safe_withdrawal_rate
+
+class RetirementCalculator:
+    def __init__(self):
+        self.current_age = 0
+        self.retirement_age = 0
+        self.current_savings = 0
+        self.monthly_savings = 0
+        self.annual_return_rate = 0.07  # 7% default
+        self.inflation_rate = 0.03      # 3% default
+        self.annual_expenses = 0
+        self.additional_income = 0      # Social Security, pension, etc.
+        
+    def calculate_future_value(self, years):
+        """Calculate future value of current savings plus monthly contributions"""
+        fv = self.current_savings
+        monthly_return = (1 + self.annual_return_rate) ** (1/12) - 1
+        
+        for _ in range(years * 12):
+            fv = fv * (1 + monthly_return) + self.monthly_savings
+            
+        return fv
+    
+    def calculate_retirement_needs(self):
+        """Calculate how much money needed for retirement"""
+        years_until_retirement = self.retirement_age - self.current_age
+        retirement_savings = self.calculate_future_value(years_until_retirement)
+        
+        # Using the 4% rule as a basic withdrawal strategy
+        safe_withdrawal_rate = 0.04
+        annual_withdrawal_needed = self.annual_expenses * \
+            (1 + self.inflation_rate) ** years_until_retirement
+        
+        required_nest_egg = annual_withdrawal_needed / safe_withdrawal_rate
+        
+        return {
+            'retirement_savings': retirement_savings,
+            'required_nest_egg': required_nest_egg,
+            'annual_withdrawal_needed': annual_withdrawal_needed
+        }
+
+    def is_on_track(self):
+        """Determine if current savings plan meets retirement goals"""
+        results = self.calculate_retirement_needs()
+        return results['retirement_savings'] >= results['required_nest_egg']
